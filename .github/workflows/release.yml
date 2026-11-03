@@ -177,6 +177,23 @@ jobs:
       # require() failed inside Bun's .bun layout, and the failure surfaced
       # much later as "version not specified" (run 41562753264). This resolver
       # tries both layout roots and hard-fails the step when it finds neither.
+      # TEMPORARY (debug): dump the bun install layout so the resolution
+      # strategy can be grounded in what the runner ACTUALLY has. Remove once
+      # the electron resolver finds the package reliably (ADR-0029).
+      - name: Debug — bun layout and electron presence
+        run: |
+          echo "bun $(bun --version)"
+          echo "--- node_modules (root) ---"
+          ls node_modules | head -40
+          echo "--- node_modules/.bun (top) ---"
+          ls node_modules/.bun 2>/dev/null | grep -i electron | head -5
+          echo "--- apps/desktop/node_modules ---"
+          ls apps/desktop/node_modules 2>/dev/null | grep -i electron | head -5
+          echo "--- bun why electron (apps/desktop) ---"
+          bun why electron --cwd apps/desktop 2>&1 | head -10
+          echo "--- find electron/package.json (depth<=6) ---"
+          find node_modules apps/desktop/node_modules -maxdepth 6 -name package.json -path '*electron/package.json' 2>/dev/null | head -5
+
       - name: Resolve the installed electron version
         id: electron-version
         run: node -e "
