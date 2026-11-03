@@ -3,11 +3,14 @@
 # download buttons and electron-updater's feed. workflow_dispatch is the re-run
 # escape hatch (run it ON the tag's ref from the Actions UI).
 #
-# Two jobs land assets on the same tagged Release:
+# Three jobs land assets on the same tagged Release:
 #   `release`        macOS arm64 — signed + notarized DMG + ZIP + latest-mac.yml.
 #   `release-linux`  Linux x64 — unsigned AppImage + .deb + latest-linux.yml. Runs
 #                    after `release` so the Release exists before it appends (no
 #                    create-race) and Linux never blocks on Apple credentials.
+#   `release-win`    Windows x64 — unsigned NSIS installer + .blockmap +
+#                    latest.yml. Runs after `release` for the same create-race
+#                    reason as Linux (ADR-0029).
 #
 # The macOS Release is ALWAYS signed + notarized — an unsigned macOS Release would
 # be Gatekeeper-blocked for every downloader and rejected by the updater, so the
@@ -131,3 +134,49 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun run --cwd apps/desktop release:linux
+
+  release-win:
+    name: Build, publish (Windows x64)
+    runs-on: windows-latest
+    # Appends its assets to the Release created by `release` — same sequencing
+    # rationale as `release-linux` (ADR-0029). Windows defaults `run` to
+    # PowerShell and these guards are bash, so the job forces `shell: bash`.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Guard — tag matches apps/desktop package.json version
+        if: github.ref_type == 'tag'
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pkg_version="$(node -p "require('./apps/desktop/package.json').version")"
+          if [[ "$tag_version" != "$pkg_version" ]]; then
+            echo "Tag v$tag_version does not match apps/desktop/package.json version $pkg_version." >&2
+            echo "Bump the version in a release commit, then re-tag." >&2
+            exit 1
+          fi
+
+      # electron-builder cannot resolve the hoisted electron package from a
+      # workspace (it doesn't walk up out of apps/desktop, and ^42.5.2 is not a
+      # fixed version) — proven locally (ADR-0029). Resolve the INSTALLED
+      # version and pin it, so the packaged app always runs the electron it
+      # was actually built against.
+      - name: Resolve the installed electron version
+        id: electron-version
+        run: echo "version=$(node -p "require('electron/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build, publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run --cwd apps/desktop release:win -- "-c.electronVersion=${{ steps.electron-version.outputs.version }}"

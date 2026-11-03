@@ -24,6 +24,8 @@
     "release": "electron-vite build && electron-builder --mac --arm64 --publish always",
     "dist:linux": "electron-vite build && electron-builder --linux --x64 --publish never",
     "release:linux": "electron-vite build && electron-builder --linux --x64 --publish always",
+    "dist:win": "electron-vite build && electron-builder --win --publish never",
+    "release:win": "electron-vite build && electron-builder --win --publish always",
     "postinstall": "node scripts/fix-node-pty-perms.mjs && node scripts/patch-dev-electron.mjs"
   },
   "dependencies": {
