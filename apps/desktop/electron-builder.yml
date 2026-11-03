@@ -20,7 +20,7 @@ files:
 # @lydell/node-pty ships a prebuilt N-API binary per platform (darwin/linux/win,
 # x64/arm64) as separate optionalDependency packages — one `pty.node` that runs
 # under both Node and Electron with NO rebuild. So skip npmRebuild on every
-# platform: there's nothing to compile, and each build's `bun install` already
+# platform: there's nothing to compile, and each build's `pnpm install` already
 # pulled the binary matching its host.
 npmRebuild: false
 

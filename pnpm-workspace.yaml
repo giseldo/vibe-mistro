@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+
+overrides:
+  shiki: 3.23.0
+  "@shikijs/transformers": 3.23.0
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  sharp: true

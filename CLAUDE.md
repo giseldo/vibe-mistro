@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-vibe-mistro is a desktop app (Electron + React 19 + TypeScript, Bun-managed) that orchestrates
+vibe-mistro is a desktop app (Electron + React 19 + TypeScript, pnpm-managed) that orchestrates
 multiple **Mistral Vibe** coding agents across local projects. It is a **thin orchestrator**: it
 drives an external agent (`vibe-acp`) over the **Agent Client Protocol (ACP)** — JSON-RPC 2.0 over
 stdio — and renders its output. The model loop, tool selection, and code intelligence belong to
@@ -17,9 +17,9 @@ issue numbers and "TB" slice numbers).
 
 ## Repo layout
 
-Bun-workspaces monorepo: the desktop app lives in **`apps/desktop`**, the marketing page (Astro,
+pnpm workspaces monorepo: the desktop app lives in **`apps/desktop`**, the marketing page (Astro,
 deployed to Vercel, deliberately independent — no workspace deps) in **`apps/web`**. Root scripts
-delegate via `bun run --cwd`. **Every `src/...`, `e2e/...`, `scripts/...`, or config path in this
+delegate via `pnpm run --cwd`. **Every `src/...`, `e2e/...`, `scripts/...`, or config path in this
 file is relative to `apps/desktop/`.** Distribution decisions (signing, GitHub Releases, App
 updates) are in `docs/adr/0018`.
 
@@ -28,42 +28,36 @@ updates) are in `docs/adr/0018`.
 All from the repo root:
 
 ```bash
-bun install
-bun run dev         # launch Electron + Vite dev server
-bun run dev:web     # marketing page dev server (Astro)
-bun run typecheck   # desktop: tsc over BOTH tsconfig.node.json (main/preload) and tsconfig.web.json (renderer); web: astro check
-bun run build       # production build (electron-vite + astro)
-bun run lint        # eslint . (desktop)
-bun run test        # vitest run (one-shot)
-bun run test:watch  # vitest watch
+pnpm install
+pnpm run dev         # launch Electron + Vite dev server
+pnpm run dev:web     # marketing page dev server (Astro)
+pnpm run typecheck   # desktop: tsc over BOTH tsconfig.node.json (main/preload) and tsconfig.web.json (renderer); web: astro check
+pnpm run build       # production build (electron-vite + astro)
+pnpm run lint        # eslint . (desktop)
+pnpm run test        # vitest run (one-shot)
+pnpm run test:watch  # vitest watch
 ```
 
 Run a single test file or test (the vitest project is `apps/desktop`):
 
 ```bash
-bun run --cwd apps/desktop test src/main/agent-pool.test.ts
-bun run --cwd apps/desktop test -t "evicts the least-recently-active"
+pnpm --dir apps/desktop run test src/main/agent-pool.test.ts
+pnpm --dir apps/desktop run test -t "evicts the least-recently-active"
 ```
 
 Tests are colocated as `*.test.ts` next to the code they cover and run in the `node` environment
 (no jsdom — renderer logic is tested as pure modules, not via DOM rendering). After non-trivial
-changes, run `bun run typecheck` (the two-project split means a renderer-only error won't surface
+changes, run `pnpm run typecheck` (the two-project split means a renderer-only error won't surface
 from a main-process type-check, and vice-versa).
 
 Environment note: node lives ONLY on nvm — prepend it (and `~/.local/bin`, where the `vibe-acp`/`uv`
 entrypoint lives) to PATH in every shell command:
 `export PATH="$HOME/.nvm/versions/node/v22.22.1/bin:$HOME/.local/bin:$PATH"`. Don't rely on `Bun.*`
-runtime APIs in shipped main-process code — Electron runs its own Node at runtime, Bun is only the
-package manager/test runner.
+runtime APIs in shipped main-process code — Electron runs its own Node at runtime, pnpm is only the package manager.
 
 Gates before any slice is considered done (run all four):
-`bun run lint && bun run typecheck && bun run build && bun run test`.
+`pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test`.
 
-Bun `child_process` gotcha: Bun 1.3.8's `node:child_process` does NOT deliver `stdin.write()` to a
-piped child, so any **standalone script** that pipes into `vibe-acp` must be bundled to a node target
-and run under node, not bun:
-`bun build scripts/x.ts --target=node --outfile=/tmp/x.mjs && node /tmp/x.mjs`. The Electron app
-itself is unaffected (it uses its own Node).
 
 ## Process boundary
 

@@ -1,9 +1,10 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { extname, join, relative } from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 const SOURCE_ROOT = new URL('../src/renderer/src/', import.meta.url)
-const SOURCE_PATH = SOURCE_ROOT.pathname
+const SOURCE_PATH = fileURLToPath(SOURCE_ROOT)
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx'])
 const REMOVED_TOKEN_NAMES = [
   'bg',

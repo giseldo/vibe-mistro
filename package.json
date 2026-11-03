@@ -2,29 +2,23 @@
   "name": "vibe-mistro-monorepo",
   "private": true,
   "type": "module",
-  "description": "Bun-workspaces monorepo: the vibe-mistro desktop app (apps/desktop) and its marketing page (apps/web).",
+  "description": "pnpm workspaces monorepo: the vibe-mistro desktop app (apps/desktop) and its marketing page (apps/web).",
   "author": "Abdullah Atrash",
   "license": "MIT",
-  "workspaces": [
-    "apps/*"
-  ],
   "scripts": {
-    "dev": "bun run --cwd apps/desktop dev",
-    "dev:web": "bun run --cwd apps/web dev",
-    "build": "bun run --cwd apps/desktop build && bun run --cwd apps/web build",
-    "preview": "bun run --cwd apps/desktop preview",
-    "start": "bun run --cwd apps/desktop start",
-    "typecheck": "bun run --cwd apps/desktop typecheck && bun run --cwd apps/web typecheck",
-    "test": "bun run --cwd apps/desktop test",
-    "test:watch": "bun run --cwd apps/desktop test:watch",
-    "test:e2e": "bun run --cwd apps/desktop test:e2e",
-    "test:e2e:update": "bun run --cwd apps/desktop test:e2e:update",
-    "dist": "bun run --cwd apps/desktop dist",
-    "dist:unsigned": "bun run --cwd apps/desktop dist:unsigned",
-    "lint": "bun run --cwd apps/desktop lint"
+    "dev": "pnpm --dir apps/desktop run dev",
+    "dev:web": "pnpm --dir apps/web run dev",
+    "build": "pnpm --dir apps/desktop run build && pnpm --dir apps/web run build",
+    "preview": "pnpm --dir apps/desktop run preview",
+    "start": "pnpm --dir apps/desktop run start",
+    "typecheck": "pnpm --dir apps/desktop run typecheck && pnpm --dir apps/web run typecheck",
+    "test": "pnpm --dir apps/desktop run test",
+    "test:watch": "pnpm --dir apps/desktop run test:watch",
+    "test:e2e": "pnpm --dir apps/desktop run test:e2e",
+    "test:e2e:update": "pnpm --dir apps/desktop run test:e2e:update",
+    "dist": "pnpm --dir apps/desktop run dist",
+    "dist:unsigned": "pnpm --dir apps/desktop run dist:unsigned",
+    "lint": "pnpm --dir apps/desktop run lint"
   },
-  "overrides": {
-    "shiki": "3.23.0",
-    "@shikijs/transformers": "3.23.0"
-  }
+  "packageManager": "pnpm@11.22.0"
 }

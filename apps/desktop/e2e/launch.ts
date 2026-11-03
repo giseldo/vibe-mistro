@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
 
-/** The built main-process entry the suite drives (run `bun run build` first). */
+/** The built main-process entry the suite drives (run `pnpm run build` first). */
 export const MAIN_ENTRY = resolve(import.meta.dirname, '../out/main/index.js')
 
 /** The fake `vibe-acp` bin dir — prepend to PATH (with the shell-env probe skipped). */
@@ -15,7 +15,7 @@ export const WINDOW = { width: 1400, height: 900 }
 
 export function assertBuilt(): void {
   if (!existsSync(MAIN_ENTRY)) {
-    throw new Error('out/main/index.js is missing — run `bun run build` before `bun run test:e2e`.')
+    throw new Error('out/main/index.js is missing — run `pnpm run build` before `pnpm run test:e2e`.')
   }
 }
 

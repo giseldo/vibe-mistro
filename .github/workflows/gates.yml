@@ -37,40 +37,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Bun is the package manager and the test runner (CLAUDE.md) — but NOT the
-      # runtime the app ships on, so it is not the whole story; see setup-node.
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      # `node:sqlite` (persistence, ADR-0019) needs Node >= 22.5, and the runner
-      # image's default Node is not guaranteed to be that. Pin it so a green run
-      # here means the same thing as a green run locally.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       # `postinstall` fixes the node-pty exec bit and patches the dev Electron —
       # both are load-bearing, so never install with --ignore-scripts here.
       - name: Install dependencies
-        run: bun install
+        run: pnpm install --frozen-lockfile
 
       # Each gate is its own step so a failure names itself in the UI. They run
       # even after an earlier one fails (`!cancelled()`), so one run reports every
       # problem instead of making you fix them one push at a time.
       - name: Lint
-        run: bun run lint
+        run: pnpm run lint
 
       - name: Typecheck
         if: ${{ !cancelled() }}
-        run: bun run typecheck
+        run: pnpm run typecheck
 
       - name: Build
         if: ${{ !cancelled() }}
-        run: bun run build
+        run: pnpm run build
 
       - name: Test
         if: ${{ !cancelled() }}
-        run: bun run test
+        run: pnpm run test

@@ -42,13 +42,13 @@ when you restart or quit.
 
 ### Run from source
 
-Or run it from source with [Bun](https://bun.sh):
+Or run it from source with [pnpm](https://pnpm.io/):
 
 ```bash
 git clone https://github.com/abdullahatrash/vibe-mistro.git
 cd vibe-mistro
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Some notes
@@ -66,23 +66,23 @@ There is no public docs site yet — see the markdown files in [docs](./docs).
 
 ## Contributing
 
-The repo is a Bun-workspaces monorepo: the desktop app lives in [`apps/desktop`](./apps/desktop)
+The repo is a pnpm workspaces monorepo: the desktop app lives in [`apps/desktop`](./apps/desktop)
 and the marketing page in [`apps/web`](./apps/web). All commands run from the repo root:
 
 ```bash
-bun install
-bun run dev         # launch Electron + Vite dev server
-bun run dev:web     # marketing page dev server
-bun run typecheck   # type-check main + renderer + web
-bun run lint        # eslint
-bun run test        # vitest
-bun run build       # production build (both apps)
+pnpm install
+pnpm run dev         # launch Electron + Vite dev server
+pnpm run dev:web     # marketing page dev server
+pnpm run typecheck   # type-check main + renderer + web
+pnpm run lint        # eslint
+pnpm run test        # vitest
+pnpm run build       # production build (both apps)
 ```
 
 Before opening a PR, make sure all four gates pass:
 
 ```bash
-bun run lint && bun run typecheck && bun run build && bun run test
+pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test
 ```
 
 ## License

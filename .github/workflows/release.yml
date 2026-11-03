@@ -44,15 +44,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22'
 
-      # The repo commits no lockfile (bun.lock is gitignored), so this is a
-      # plain resolve-and-install — no --frozen-lockfile.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Install dependencies
-        run: bun install
+        run: pnpm install --frozen-lockfile
 
       # The feed must never disagree with the binary: the tag IS the version.
       - name: Guard — tag matches apps/desktop package.json version
@@ -93,7 +94,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: bun run --cwd apps/desktop release
+        run: pnpm --dir apps/desktop run release
 
       - name: Gatekeeper assessment of the published app
         run: |
@@ -105,19 +106,22 @@ jobs:
     # Sequenced after macOS so the tagged Release already exists — the Linux job
     # appends its assets instead of racing to create the Release. No native build
     # step: @lydell/node-pty ships a prebuilt linux-x64 binary (pulled by this
-    # job's `bun install`), so packaging is pure electron-builder.
+    # job's `pnpm install --frozen-lockfile`), so packaging is pure electron-builder.
     needs: release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
-        run: bun install
+        run: pnpm install --frozen-lockfile
 
       - name: Guard — tag matches apps/desktop package.json version
         if: github.ref_type == 'tag'
@@ -133,7 +137,7 @@ jobs:
       - name: Build, publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bun run --cwd apps/desktop release:linux
+        run: pnpm --dir apps/desktop run release:linux
 
   release-win:
     name: Build, publish (Windows x64)
@@ -150,13 +154,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
-        run: bun install
+        run: pnpm install --frozen-lockfile
 
       - name: Guard — tag matches apps/desktop package.json version
         if: github.ref_type == 'tag'
@@ -168,31 +175,6 @@ jobs:
             echo "Bump the version in a release commit, then re-tag." >&2
             exit 1
           fi
-
-      # electron-builder cannot resolve the hoisted electron package from a
-      # workspace (it doesn't walk up out of apps/desktop, and ^42.5.2 is not a
-      # fixed version) — proven locally (ADR-0029). Resolve the INSTALLED
-      # version and pin it. Resolution must NOT be a silent subshell: the pure
-      # `node -p "$(…)"` form wrote an EMPTY version to GITHUB_OUTPUT when
-      # require() failed inside Bun's .bun layout, and the failure surfaced
-      # much later as "version not specified" (run 41562753264). This resolver
-      # tries both layout roots and hard-fails the step when it finds neither.
-      # TEMPORARY (debug): dump the bun install layout so the resolution
-      # strategy can be grounded in what the runner ACTUALLY has. Remove once
-      # the electron resolver finds the package reliably (ADR-0029).
-      - name: Debug — bun layout and electron presence
-        run: |
-          echo "bun $(bun --version)"
-          echo "--- node_modules (root) ---"
-          ls node_modules | head -40
-          echo "--- node_modules/.bun (top) ---"
-          ls node_modules/.bun 2>/dev/null | grep -i electron | head -5
-          echo "--- apps/desktop/node_modules ---"
-          ls apps/desktop/node_modules 2>/dev/null | grep -i electron | head -5
-          echo "--- bun why electron (apps/desktop) ---"
-          bun why electron --cwd apps/desktop 2>&1 | head -10
-          echo "--- find electron/package.json (depth<=6) ---"
-          find node_modules apps/desktop/node_modules -maxdepth 6 -name package.json -path '*electron/package.json' 2>/dev/null | head -5
 
       - name: Resolve the installed electron version
         id: electron-version
@@ -215,4 +197,4 @@ jobs:
       - name: Build, publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bun run --cwd apps/desktop release:win -- "-c.electronVersion=${{ steps.electron-version.outputs.version }}"
+        run: pnpm --dir apps/desktop run release:win -- "-c.electronVersion=${{ steps.electron-version.outputs.version }}"

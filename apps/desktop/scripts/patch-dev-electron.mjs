@@ -1,5 +1,5 @@
 // Renames the DEV Electron.app so the macOS menu bar says "Vibe Mistro (Beta)"
-// instead of "Electron" during `bun run dev`. macOS takes the bold app-menu title
+// instead of "Electron" during `pnpm run dev`. macOS takes the bold app-menu title
 // (and the pre-ready Dock name) from the running bundle's Info.plist — never from
 // `app.setName()` — so in dev the bundle inside node_modules must be patched.
 // This is t3code's electron-launcher trick (apps/desktop/scripts/electron-launcher.mjs),
