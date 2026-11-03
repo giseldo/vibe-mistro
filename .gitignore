@@ -19,3 +19,6 @@ playwright-report/
 
 # Claude Code session worktrees (local tooling, never part of the repo).
 .claude/worktrees/
+
+# npm lockfile (repo is Bun-managed)
+package-lock.json
