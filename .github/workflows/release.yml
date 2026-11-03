@@ -138,9 +138,11 @@ jobs:
   release-win:
     name: Build, publish (Windows x64)
     runs-on: windows-latest
-    # Appends its assets to the Release created by `release` — same sequencing
-    # rationale as `release-linux` (ADR-0029). Windows defaults `run` to
-    # PowerShell and these guards are bash, so the job forces `shell: bash`.
+    # Independent lane, NOT gated on `release`: electron-builder creates-or-appends
+    # the tagged Release itself, and a repo without Apple credentials must not
+    # kill the Windows lane when the macOS guard refuses an unsigned Release
+    # (ADR-0029). Windows defaults `run` to PowerShell and these guards are bash,
+    # so the job forces `shell: bash`.
     defaults:
       run:
         shell: bash
@@ -170,11 +172,28 @@ jobs:
       # electron-builder cannot resolve the hoisted electron package from a
       # workspace (it doesn't walk up out of apps/desktop, and ^42.5.2 is not a
       # fixed version) — proven locally (ADR-0029). Resolve the INSTALLED
-      # version and pin it, so the packaged app always runs the electron it
-      # was actually built against.
+      # version and pin it. Resolution must NOT be a silent subshell: the pure
+      # `node -p "$(…)"` form wrote an EMPTY version to GITHUB_OUTPUT when
+      # require() failed inside Bun's .bun layout, and the failure surfaced
+      # much later as "version not specified" (run 41562753264). This resolver
+      # tries both layout roots and hard-fails the step when it finds neither.
       - name: Resolve the installed electron version
         id: electron-version
-        run: echo "version=$(node -p "require('electron/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: node -e "
+          const fs = require('fs');
+          let version = null;
+          for (const base of ['', 'apps/desktop/', 'apps/desktop/../']) {
+            try {
+              version = require(base + 'node_modules/electron/package.json').version;
+              console.log('electron resolved at ' + base + 'node_modules/electron -> ' + version);
+              break;
+            } catch (err) {
+              if (err.code !== 'ENOENT' && err.code !== 'MODULE_NOT_FOUND') throw err;
+            }
+          }
+          if (!version) throw new Error('electron/package.json not found in any known location — cannot pin electronVersion');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + version + '\n');
+          "
 
       - name: Build, publish
         env:

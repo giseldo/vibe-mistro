@@ -16,10 +16,14 @@ signing certificate, and the repo has no Windows signing secrets — only the Ap
 ## Decision
 
 1. **NSIS installer (x64), built on `windows-latest`** — the Electron default. A new
-   `release-win` job mirrors `release-linux`: `needs: release` (appends to the existing tagged
-   Release instead of racing to create it), `shell: bash` throughout (Windows runners default
-   to PowerShell; the shared guards are bash), same Checkout → Bun → `bun install` →
-   tag-version-guard shape.
+   `release-win` job runs as an **independent lane with no `needs:`**: electron-builder
+   creates-or-appends to the tagged Release itself, and a repo without Apple credentials must
+   not implicitly skip Windows whenever the macOS job fails its secrets guard
+   (proven: releases skipped "needs"-gated jobs on failed deps). Unlike `release-linux`
+   (which still sequences after `release`), Windows may create the Release if it lands first —
+   with `releaseType: release` electron-builder publishes it once complete. The job forces
+   `shell: bash` (Windows runners default to PowerShell; the shared guards are bash) and keeps
+   the same Checkout → Bun → `bun install` → tag-version-guard shape.
 2. **Unsigned, by design** — Symantec/DigiCert EV code-signing certs are costly (OV/EV tiers,
    annual renewal) and only matter once Windows users exist at scale (mirrors ADR-0018's
    unsigned Linux). Consequence: SmartScreen will show "unknown publisher" for the first
@@ -29,10 +33,13 @@ signing certificate, and the repo has no Windows signing secrets — only the Ap
    cannot compute the version from installed node modules in a Bun-workspaces layout — it does
    not walk up out of `apps/desktop` and `^42.5.2` is no fixed version
    (electron-userland/electron-builder#3984). The job resolves the *installed* electron's
-   version (`node -p "require('electron/package.json').version"`) into a step output and passes
-   it via `-c.electronVersion`. The packaged binary therefore always matches the electron it
-   was packed with — and the installer is re-resolvable each release instead of tracking the
-   caret range by hand.
+   version and passes it via `-c.electronVersion`, so the packaged binary always matches the
+   electron it was packed with. **The resolver must hard-fail on a miss**: the first version of
+   it (`node -p "$(require(…))"` → `echo … >> $GITHUB_OUTPUT`) silently wrote an EMPTY
+   `version=` output when `require` failed inside Bun's `node_modules/.bun` layout, and the
+   failure only surfaced as app-builder's `version not specified` a minute later
+   (run 41562753264). The resolver now tries the known layout roots and throws — failing the
+   step — when it finds neither, instead of a silent output.
 4. **New scripts** in `apps/desktop/package.json`: `dist:win` / `release:win` (mirror
    `dist:linux` / `release:linux`, `--publish never`/`always`). The workflow calls
    `release:win`, appending the pin flag — bun forwards args after `--`.
